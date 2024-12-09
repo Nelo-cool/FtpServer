@@ -32,9 +32,10 @@ namespace TestFtpServer
             }
 
             var appLifetime = _serviceProvider.GetRequiredService<IHostApplicationLifetime>();
-            var ipcServiceHost = new IpcServiceHostBuilder(_serviceProvider)
-               .AddNamedPipeEndpoint<Api.IFtpServerHost>("ftpserver", "ftpserver")
-               .Build();
+            var scope = _serviceProvider.CreateScope();
+            var ipcServiceHost = new IpcHostBuilder(scope.ServiceProvider)
+                                .AddNamedPipeEndpoint<Api.IFtpServerHost>("ftpserver", "ftpserver")
+                                .Build();
             _taskInformation = new TaskInformation(appLifetime, ipcServiceHost);
             return Task.CompletedTask;
         }

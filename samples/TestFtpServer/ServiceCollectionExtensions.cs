@@ -109,10 +109,17 @@ namespace TestFtpServer
 
             // Add custom command handler extensions
             services.AddSingleton<IFtpCommandHandlerExtensionScanner>(
-                sp => new AssemblyFtpCommandHandlerExtensionScanner(
-                    sp.GetRequiredService<IFtpCommandHandlerProvider>(),
-                    sp.GetService<ILogger<AssemblyFtpCommandHandlerExtensionScanner>>(),
-                    typeof(SiteHelloFtpCommandHandlerExtension).Assembly));
+                sp =>
+                {
+                    using var scope = sp.CreateScope();
+                    var handlerProvider = scope.ServiceProvider.GetRequiredService<IFtpCommandHandlerProvider>();
+                    var logger = scope.ServiceProvider.GetService<ILogger<AssemblyFtpCommandHandlerExtensionScanner>>();
+                    
+                    return new AssemblyFtpCommandHandlerExtensionScanner(
+                        handlerProvider,
+                        logger,
+                        typeof(SiteHelloFtpCommandHandlerExtension).Assembly);
+                });
 
 #if NETCOREAPP
             if (options.SetFileSystemId && RuntimeEnvironment.OperatingSystemPlatform !=

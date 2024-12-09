@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading;
 
 using JKang.IpcServiceFramework;
+using JKang.IpcServiceFramework.Client;
 
 using TestFtpServer.Api;
 
@@ -22,7 +23,7 @@ namespace TestFtpServer.Shell.Commands
         /// </summary>
         /// <param name="client">The IPC client.</param>
         public CloseCommandHandler(
-            IpcServiceClient<IFtpServerHost> client)
+            IpcClient<IFtpServerHost> client)
         {
             _subCommands = new ICommandInfo[]
                 {

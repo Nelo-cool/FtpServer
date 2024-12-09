@@ -4,15 +4,15 @@
 
   <PropertyGroup>
     <LangVersion>8.0</LangVersion>
-    <VersionPrefix>3.0.0</VersionPrefix>
+    <VersionPrefix>3.2.9</VersionPrefix>
     <Product>FTP Server</Product>
     <Copyright>Fubar Development Junker 2015-2019, 40three GmbH 2019</Copyright>
     <Company>Fubar Development Junker</Company>
-    <Authors>Fubar Development Junker</Authors>
-    <PackageProjectUrl>https://github.com/FubarDevelopment/FtpServer</PackageProjectUrl>
+    <Authors>Fubar Development Junker, edokan</Authors>
+    <PackageProjectUrl>https://github.com/edokan/FtpServer</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReleaseNotes>https://github.com/FubarDevelopment/FtpServer/releases</PackageReleaseNotes>
-    <RepositoryUrl>https://github.com/FubarDevelopment/FtpServer.git</RepositoryUrl>
+    <PackageReleaseNotes>https://github.com/edokan/FtpServer/releases</PackageReleaseNotes>
+    <RepositoryUrl>https://github.com/edokan/FtpServer.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <MinClientVersion>3.5</MinClientVersion>
     <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)FubarDev.FtpServer.ruleset</CodeAnalysisRuleSet>

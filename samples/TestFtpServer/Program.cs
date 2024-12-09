@@ -6,6 +6,7 @@ using System;
 using System.IO;
 
 using JKang.IpcServiceFramework;
+using JKang.IpcServiceFramework.Hosting;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,7 +33,8 @@ namespace TestFtpServer
 
             try
             {
-                CreateHostBuilder(args).Build().Run();
+                var host = CreateHostBuilder(args).Build();
+                host.Run();
                 return 0;
             }
             catch (Exception ex)
@@ -85,15 +87,13 @@ namespace TestFtpServer
                            .AddOptions()
                            .AddFtpServices(options)
                            .AddHostedService<HostedFtpService>()
-                           .AddHostedService<HostedIpcService>()
-                           .AddIpc(
-                                builder =>
-                                {
-                                    builder
-                                       .AddNamedPipe(opt => opt.ThreadCount = 1)
-                                       .AddService<Api.IFtpServerHost, FtpServerHostApi>();
-                                });
+                           //.AddHostedService<HostedIpcService>()
+                           .AddScoped<Api.IFtpServerHost, FtpServerHostApi>();
                     })
+                  .ConfigureIpcHost(builder =>
+                   {
+                       builder.AddNamedPipeEndpoint<Api.IFtpServerHost>(pipeName: "ftpserver");
+                   })
                .UseSerilog(
                     (context, configuration) => { configuration.ReadFrom.Configuration(context.Configuration); });
         }

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using JKang.IpcServiceFramework;
+using JKang.IpcServiceFramework.Client;
 
 using TestFtpServer.Api;
 
@@ -20,13 +21,13 @@ namespace TestFtpServer.Shell.Commands
     /// </summary>
     public class CloseConnectionCommandHandler : ICommandInfo
     {
-        private readonly IpcServiceClient<IFtpServerHost> _client;
+        private readonly IpcClient<IFtpServerHost> _client;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseConnectionCommandHandler"/> class.
         /// </summary>
         /// <param name="client">The IPC client.</param>
-        public CloseConnectionCommandHandler(IpcServiceClient<IFtpServerHost> client)
+        public CloseConnectionCommandHandler(IpcClient<IFtpServerHost> client)
         {
             _client = client;
         }
@@ -52,7 +53,7 @@ namespace TestFtpServer.Shell.Commands
 
         private class CloseConnectionFinalCommandHandler : IExecutableCommandInfo
         {
-            private readonly IpcServiceClient<IFtpServerHost> _client;
+            private readonly IpcClient<IFtpServerHost> _client;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="CloseConnectionFinalCommandHandler"/> class.
@@ -60,7 +61,7 @@ namespace TestFtpServer.Shell.Commands
             /// <param name="client">The IPC client.</param>
             /// <param name="connectionId">The FTP connection ID.</param>
             public CloseConnectionFinalCommandHandler(
-                IpcServiceClient<IFtpServerHost> client,
+                IpcClient<IFtpServerHost> client,
                 string connectionId)
             {
                 _client = client;

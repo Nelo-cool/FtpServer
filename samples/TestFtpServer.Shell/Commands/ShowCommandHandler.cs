@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using JKang.IpcServiceFramework;
+using JKang.IpcServiceFramework.Client;
 
 using TestFtpServer.Api;
 
@@ -27,7 +28,7 @@ namespace TestFtpServer.Shell.Commands
         /// <param name="client">The client to be used to communicate with the FTP server.</param>
         /// <param name="status">The status of the shell.</param>
         public ShowCommandHandler(
-            IpcServiceClient<IFtpServerHost> client,
+            IpcClient<IFtpServerHost> client,
             IShellStatus status)
         {
             _subCommands = status.ExtendedModuleInfoName
@@ -53,7 +54,7 @@ namespace TestFtpServer.Shell.Commands
 
         private class ModuleCommandInfo : IExecutableCommandInfo
         {
-            private readonly IpcServiceClient<IFtpServerHost> _client;
+            private readonly IpcClient<IFtpServerHost> _client;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ModuleCommandInfo"/> class.
@@ -61,7 +62,7 @@ namespace TestFtpServer.Shell.Commands
             /// <param name="client">The client to be used to communicate with the FTP server.</param>
             /// <param name="moduleName">The name of the module.</param>
             public ModuleCommandInfo(
-                IpcServiceClient<IFtpServerHost> client,
+                IpcClient<IFtpServerHost> client,
                 string moduleName)
             {
                 _client = client;

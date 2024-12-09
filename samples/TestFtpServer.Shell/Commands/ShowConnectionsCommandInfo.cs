@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using JKang.IpcServiceFramework;
+using JKang.IpcServiceFramework.Client;
 
 using TestFtpServer.Api;
 
@@ -19,13 +20,13 @@ namespace TestFtpServer.Shell.Commands
     /// </summary>
     public class ShowConnectionsCommandInfo : IExecutableCommandInfo
     {
-        private readonly IpcServiceClient<IFtpServerHost> _client;
+        private readonly IpcClient<IFtpServerHost> _client;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShowConnectionsCommandInfo"/> class.
         /// </summary>
         /// <param name="client">The IPC client.</param>
-        public ShowConnectionsCommandInfo(IpcServiceClient<IFtpServerHost> client)
+        public ShowConnectionsCommandInfo(IpcClient<IFtpServerHost> client)
         {
             _client = client;
         }

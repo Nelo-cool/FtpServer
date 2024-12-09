@@ -5,6 +5,11 @@
 This FTP server is written as .NET Standard 2.0 library and has an
 abstract file system which allows e.g. Google Drive as backend.
 
+**This fork includes new commits from the original repository and from other forks if possible, 
+upgrades to newer nuget dependencies, and uses net9.0 as a new target.**
+
+**This fork uses `edokan` as nuget prefix to avoid possible conflicts**
+
 # License
 
 The library is released under the [![MIT license](https://img.shields.io/github/license/mashape/apistatus.svg)](http://opensource.org/licenses/MIT).
@@ -24,18 +29,20 @@ The library is released under the [![MIT license](https://img.shields.io/github/
 * Visual Studio 2022
 * .NET Standard 2.0 (everything **except** sample application, PAM authentication)
 * .NET Core 3.1 (PAM authentication)
+* .NET Core 9.0
 
 ## NuGet packages
 
-| Package name                                   | Description                   | Badge |
-|------------------------------------------------|-------------------------------|-------|
-| `FubarDev.FtpServer`                           | Core library                  | [![FubarDev.FtpServer](https://img.shields.io/nuget/vpre/FubarDev.FtpServer.svg)](https://www.nuget.org/packages/FubarDev.FtpServer) |
-| `FubarDev.FtpServer.Abstractions`              | Basic types                   | [![FubarDev.FtpServer.Abstractions](https://img.shields.io/nuget/vpre/FubarDev.FtpServer.Abstractions.svg)](https://www.nuget.org/packages/FubarDev.FtpServer.Abstractions) |
-| `FubarDev.FtpServer.FileSystem.DotNet`         | `System.IO`-based file system | [![FubarDev.FtpServer.FileSystem.DotNet](https://img.shields.io/nuget/vpre/FubarDev.FtpServer.FileSystem.DotNet.svg)](https://www.nuget.org/packages/FubarDev.FtpServer.FileSystem.DotNet) |
-| `FubarDev.FtpServer.FileSystem.GoogleDrive`    | Google Drive as file system   | [![FubarDev.FtpServer.FileSystem.GoogleDrive](https://img.shields.io/nuget/vpre/FubarDev.FtpServer.FileSystem.GoogleDrive.svg)](https://www.nuget.org/packages/FubarDev.FtpServer.FileSystem.GoogleDrive) |
-| `FubarDev.FtpServer.FileSystem.InMemory`       | In-memory file system         | [![FubarDev.FtpServer.FileSystem.InMemory](https://img.shields.io/nuget/vpre/FubarDev.FtpServer.FileSystem.InMemory.svg)](https://www.nuget.org/packages/FubarDev.FtpServer.FileSystem.InMemory) |
-| `FubarDev.FtpServer.FileSystem.Unix`           | Unix file system              | [![FubarDev.FtpServer.FileSystem.Unix](https://img.shields.io/nuget/vpre/FubarDev.FtpServer.FileSystem.Unix.svg)](https://www.nuget.org/packages/FubarDev.FtpServer.FileSystem.Unix) |
-| `FubarDev.FtpServer.MembershipProvider.Pam`    | PAM membership provider       | [![FubarDev.FtpServer.MembershipProvider.Pam](https://img.shields.io/nuget/vpre/FubarDev.FtpServer.MembershipProvider.Pam.svg)](https://www.nuget.org/packages/FubarDev.FtpServer.MembershipProvider.Pam) |
+| Package name                                       | Description                   | Badge                                                                                                                                                                                                                   |
+|----------------------------------------------------|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `edokan.FubarDev.FtpServer`                        | Core library                  | [![FubarDev.FtpServer](https://img.shields.io/nuget/vpre/edokan.FubarDev.FtpServer.svg)](https://www.nuget.org/packages/edokan.FubarDev.FtpServer)                                                                      |
+| `edokan.FubarDev.FtpServer.Abstractions`           | Basic types                   | [![FubarDev.FtpServer.Abstractions](https://img.shields.io/nuget/vpre/edokan.FubarDev.FtpServer.Abstractions.svg)](https://www.nuget.org/packages/edokan.FubarDev.FtpServer.Abstractions)                               |
+| `edokan.FubarDev.FtpServer.FileSystem.DotNet`      | `System.IO`-based file system | [![FubarDev.FtpServer.FileSystem.DotNet](https://img.shields.io/nuget/vpre/edokan.FubarDev.FtpServer.FileSystem.DotNet.svg)](https://www.nuget.org/packages/edokan.FubarDev.FtpServer.FileSystem.DotNet)                |
+| `edokan.FubarDev.FtpServer.FileSystem.GoogleDrive` | Google Drive as file system   | [![FubarDev.FtpServer.FileSystem.GoogleDrive](https://img.shields.io/nuget/vpre/edokan.FubarDev.FtpServer.FileSystem.GoogleDrive.svg)](https://www.nuget.org/packages/edokan.FubarDev.FtpServer.FileSystem.GoogleDrive) |
+| `edokan.FubarDev.FtpServer.FileSystem.S3`          | Amazon S3 as file system      | [![FubarDev.FtpServer.FileSystem.S3](https://img.shields.io/nuget/vpre/edokan.FubarDev.FtpServer.FileSystem.S3.svg)](https://www.nuget.org/packages/edokan.FubarDev.FtpServer.FileSystem.S3)                            |
+| `edokan.FubarDev.FtpServer.FileSystem.InMemory`    | In-memory file system         | [![FubarDev.FtpServer.FileSystem.InMemory](https://img.shields.io/nuget/vpre/edokan.FubarDev.FtpServer.FileSystem.InMemory.svg)](https://www.nuget.org/packages/edokan.FubarDev.FtpServer.FileSystem.InMemory)          |
+| `edokan.FubarDev.FtpServer.FileSystem.Unix`        | Unix file system              | [![FubarDev.FtpServer.FileSystem.Unix](https://img.shields.io/nuget/vpre/edokan.FubarDev.FtpServer.FileSystem.Unix.svg)](https://www.nuget.org/packages/edokan.FubarDev.FtpServer.FileSystem.Unix)                      |
+| `edokan.FubarDev.FtpServer.MembershipProvider.Pam` | PAM membership provider       | [![FubarDev.FtpServer.MembershipProvider.Pam](https://img.shields.io/nuget/vpre/FubarDev.FtpServer.MembershipProvider.Pam.svg)](https://www.nuget.org/packages/edokan.FubarDev.FtpServer.MembershipProvider.Pam)        |
 
 # Example FTP server
 
@@ -43,8 +50,8 @@ The library is released under the [![MIT license](https://img.shields.io/github/
 
 ```bash
 dotnet new console
-dotnet add package FubarDev.FtpServer.FileSystem.DotNet
-dotnet add package FubarDev.FtpServer
+dotnet add package edokan.FubarDev.FtpServer.FileSystem.DotNet
+dotnet add package edokan.FubarDev.FtpServer
 dotnet add package Microsoft.Extensions.DependencyInjection
 ```
 

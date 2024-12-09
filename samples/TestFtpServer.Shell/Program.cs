@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using JKang.IpcServiceFramework;
+using JKang.IpcServiceFramework.Client;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,14 +22,16 @@ namespace TestFtpServer.Shell
                    .AddJsonFile("appsettings.Development.json", true)
                    .Build();
 
-                var client = new IpcServiceClientBuilder<Api.IFtpServerHost>()
-                   .UseNamedPipe("ftpserver")
-                   .Build();
+                var tempServiceProvider = new ServiceCollection()
+                                         .AddNamedPipeIpcClient<Api.IFtpServerHost>("client1", pipeName: "ftpserver")
+                                         .BuildServiceProvider();
+                // resolve IPC client factory
+                var clientFactory = tempServiceProvider.GetRequiredService<IIpcClientFactory<Api.IFtpServerHost>>();
+                var client = clientFactory.CreateClient("client1");
+                
 
-                var simpleModuleInfoNames = await client.InvokeAsync(host => host.GetSimpleModules())
-                   .ConfigureAwait(false);
-                var extendedModuleInfoName = await client.InvokeAsync(host => host.GetExtendedModules())
-                   .ConfigureAwait(false);
+                var simpleModuleInfoNames = await client.InvokeAsync(host => host.GetSimpleModules()).ConfigureAwait(false);
+                var extendedModuleInfoName = await client.InvokeAsync(host => host.GetExtendedModules()).ConfigureAwait(false);
 
                 var services = new ServiceCollection()
                    .AddLogging(builder => builder.AddConfiguration(config.GetSection("Logging")).AddConsole())

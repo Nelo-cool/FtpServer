@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net9.0</TargetFrameworks>
     <Description>In-memory file system for portable FTP server</Description>
     <PackageTags>file;system;portable;FTP;server</PackageTags>
+    <PackageId>edokan.FubarDev.FtpServer.FileSystem.InMemory</PackageId>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\FubarDev.FtpServer.Abstractions\FubarDev.FtpServer.Abstractions.csproj" />
