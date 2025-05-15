@@ -5,6 +5,7 @@
     <Description>.NET file system for portable FTP server</Description>
     <PackageTags>file;system;portable;FTP;server</PackageTags>
     <PackageId>edokan.FubarDev.FtpServer.FileSystem.DotNet</PackageId>
+    <LangVersion>12.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\FubarDev.FtpServer.Abstractions\FubarDev.FtpServer.Abstractions.csproj" />

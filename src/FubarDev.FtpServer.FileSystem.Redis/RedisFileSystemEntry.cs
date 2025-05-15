@@ -46,10 +46,10 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         public IUnixPermissions Permissions { get; }
 
         /// <inheritdoc />
-        public DateTimeOffset? LastWriteTime { get; private set; }
+        public DateTimeOffset? LastWriteTime { get; set; }
 
         /// <inheritdoc />
-        public DateTimeOffset? CreatedTime { get; private set; }
+        public DateTimeOffset? CreatedTime { get; set; }
 
         /// <inheritdoc />
         public long NumberOfLinks { get; } = 1;

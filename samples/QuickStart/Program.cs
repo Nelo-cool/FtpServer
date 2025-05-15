@@ -1,14 +1,16 @@
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
 using FubarDev.FtpServer;
-using FubarDev.FtpServer.FileSystem.DotNet;
+using FubarDev.FtpServer.AccountManagement.Anonymous;
+using FubarDev.FtpServer.FileSystem.Redis;
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace QuickStart
+using StackExchange.Redis;
+
+namespace Thisislogic.FTPInMemoryServer
 {
     class Program
     {
@@ -17,19 +19,18 @@ namespace QuickStart
             // Setup dependency injection
             var services = new ServiceCollection();
 
-            // use %TEMP%/TestFtpServer as root folder
-            services.Configure<DotNetFileSystemOptions>(opt => opt
-               .RootPath = Path.Combine(Path.GetTempPath(), "TestFtpServer"));
-
-            // Add FTP server services
-            // DotNetFileSystemProvider = Use the .NET file system functionality
-            // AnonymousMembershipProvider = allow only anonymous logins
             services.AddFtpServer(builder => builder
-               .UseDotNetFileSystem() // Use the .NET file system functionality
-               .EnableAnonymousAuthentication()); // allow anonymous logins
+               .UseRedisFileSystem()
+               .EnableAnonymousAuthentication());
+
+            services.AddSingleton<IAnonymousPasswordValidator>(new NoValidation());
 
             // Configure the FTP server
             services.Configure<FtpServerOptions>(opt => opt.ServerAddress = "*");
+            services.Configure<RedisFileSystemOptions>(opt => opt.KeepAnonymousFileSystem = true);
+
+            services.AddSingleton<IConnectionMultiplexer, ConnectionMultiplexer>(x => ConnectionMultiplexer.Connect("redis2.thisislogic.ru:6379,password=123,asyncTimeout=15000"));
+            services.AddSingleton<RedisTree>();
 
             // Build the service provider
             using (var serviceProvider = services.BuildServiceProvider(true))

@@ -5,6 +5,7 @@
     <Description>Unix file system for portable FTP server</Description>
     <PackageTags>unix;file;system;portable;FTP;server</PackageTags>
     <PackageId>edokan.FubarDev.FtpServer.FileSystem.Unix</PackageId>
+    <LangVersion>12.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />

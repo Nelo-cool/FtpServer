@@ -5,6 +5,7 @@
     <RootNamespace>FubarDev.FtpServer</RootNamespace>
     <PackageTags>portable;FTP;server</PackageTags>
     <PackageId>edokan.FubarDev.FtpServer.Commands</PackageId>
+    <LangVersion>12.0</LangVersion>
   </PropertyGroup>
   <Import Project="../../PackageLibrary.props" />
   <ItemGroup>

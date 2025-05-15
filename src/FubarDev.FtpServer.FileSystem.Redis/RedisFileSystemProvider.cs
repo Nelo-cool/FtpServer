@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.Options;
 
+using StackExchange.Redis;
+
 namespace FubarDev.FtpServer.FileSystem.Redis
 {
     /// <summary>
@@ -16,16 +18,16 @@ namespace FubarDev.FtpServer.FileSystem.Redis
     public class RedisFileSystemProvider : IFileSystemClassFactory
     {
         private readonly IAccountDirectoryQuery _accountDirectoryQuery;
-
+        private readonly IConnectionMultiplexer _connectionMultiplexer;
         private readonly bool _keepAnonymousFileSystem;
 
         private readonly bool _keepAuthenticatedUserFileSystem;
 
         private readonly StringComparer _fileSystemComparer;
 
-        private readonly object _anonymousFileSystemLock = new object();
+        private readonly object _anonymousFileSystemLock = new ();
 
-        private readonly object _authUserFileSystemLock = new object();
+        private readonly object _authUserFileSystemLock = new ();
 
         private readonly Dictionary<string, RedisFileSystem> _anonymousFileSystems;
 
@@ -36,11 +38,14 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         /// </summary>
         /// <param name="options">The provider options.</param>
         /// <param name="accountDirectoryQuery">Interface to query account directories.</param>
+        /// <param name="connectionMultiplexer">Redis</param>
         public RedisFileSystemProvider(
             IOptions<RedisFileSystemOptions> options,
-            IAccountDirectoryQuery accountDirectoryQuery)
+            IAccountDirectoryQuery accountDirectoryQuery,
+            IConnectionMultiplexer connectionMultiplexer)
         {
             _accountDirectoryQuery = accountDirectoryQuery;
+            _connectionMultiplexer = connectionMultiplexer;
             _fileSystemComparer = options.Value.FileSystemComparer;
             _keepAnonymousFileSystem = options.Value.KeepAnonymousFileSystem;
             _keepAuthenticatedUserFileSystem = options.Value.KeepAuthenticatedUserFileSystem;
@@ -64,14 +69,14 @@ namespace FubarDev.FtpServer.FileSystem.Redis
                     {
                         if (!_anonymousFileSystems.TryGetValue(fileSystemId, out fileSystem))
                         {
-                            fileSystem = new RedisFileSystem(_fileSystemComparer);
+                            fileSystem = new RedisFileSystem(_connectionMultiplexer, _fileSystemComparer);
                             _anonymousFileSystems.Add(fileSystemId, fileSystem);
                         }
                     }
                 }
                 else
                 {
-                    fileSystem = new RedisFileSystem(_fileSystemComparer);
+                    fileSystem = new RedisFileSystem(_connectionMultiplexer, _fileSystemComparer);
                 }
             }
             else
@@ -82,14 +87,14 @@ namespace FubarDev.FtpServer.FileSystem.Redis
                     {
                         if (!_authUserFileSystems.TryGetValue(fileSystemId, out fileSystem))
                         {
-                            fileSystem = new RedisFileSystem(_fileSystemComparer);
+                            fileSystem = new RedisFileSystem(_connectionMultiplexer, _fileSystemComparer);
                             _authUserFileSystems.Add(fileSystemId, fileSystem);
                         }
                     }
                 }
                 else
                 {
-                    fileSystem = new RedisFileSystem(_fileSystemComparer);
+                    fileSystem = new RedisFileSystem(_connectionMultiplexer, _fileSystemComparer);
                 }
             }
 

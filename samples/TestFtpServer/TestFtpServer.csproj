@@ -6,6 +6,7 @@
     <AssemblyName>ftpserver</AssemblyName>
     <IsPackable>false</IsPackable>
     <TargetFrameworks>net6.0;net9.0</TargetFrameworks>
+    <LangVersion>12.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JKang.IpcServiceFramework.Hosting.NamedPipe" Version="3.1.0" />

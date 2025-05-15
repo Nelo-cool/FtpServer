@@ -5,6 +5,7 @@
     <Description>S3 file system for portable FTP server</Description>
     <PackageTags>portable;FTP;server;AWS;S3</PackageTags>
     <PackageId>edokan.FubarDev.FtpServer.FileSystem.S3</PackageId>
+    <LangVersion>12.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

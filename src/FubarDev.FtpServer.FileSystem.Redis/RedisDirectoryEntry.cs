@@ -2,7 +2,8 @@
 // Copyright (c) Fubar Development Junker. All rights reserved.
 // </copyright>
 
-using System.Collections.Generic;
+using System;
+using System.Text.Json.Serialization;
 
 using FubarDev.FtpServer.FileSystem.Generic;
 
@@ -11,42 +12,42 @@ namespace FubarDev.FtpServer.FileSystem.Redis
     /// <summary>
     /// The im-memory directory entry.
     /// </summary>
-    public class RedisDirectoryEntry : RedisFileSystemEntry, IUnixDirectoryEntry
+    /// <remarks>
+    /// Initializes a new instance of the <see cref="RedisDirectoryEntry"/> class.
+    /// </remarks>
+    public class RedisDirectoryEntry : IUnixDirectoryEntry
     {
-        private static readonly IUnixPermissions _defaultPermissions = new GenericUnixPermissions(
-            new GenericAccessMode(true, true, true),
-            new GenericAccessMode(true, true, true),
-            new GenericAccessMode(true, false, true));
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RedisDirectoryEntry"/> class.
-        /// </summary>
-        /// <param name="parent">The parent entry.</param>
-        /// <param name="name">The name of this entry.</param>
-        /// <param name="children">The children of this directory entry.</param>
-        public RedisDirectoryEntry(
-            RedisDirectoryEntry? parent,
-            string name,
-            IDictionary<string, IUnixFileSystemEntry> children)
-            : base(parent, name, _defaultPermissions)
+        public RedisDirectoryEntry()
         {
-            Children = children;
+            Permissions = new GenericUnixPermissions(
+                new GenericAccessMode(true, true, true),
+                new GenericAccessMode(true, true, true),
+                new GenericAccessMode(true, true, true));
         }
 
-        /// <summary>
-        /// Holt ein Objekt über das der Zugriff auf <see cref="Children"/> gesperrt wird.
-        /// </summary>
-        public object ChildrenLock { get; } = new object();
+        public bool IsRoot => ParentPath == null;
 
-        /// <inheritdoc />
-        public bool IsRoot => Parent is null;
-
-        /// <inheritdoc />
+        /// <inheritdoc/>
         public bool IsDeletable => !IsRoot;
 
-        /// <summary>
-        /// Gets the children of this directory entry.
-        /// </summary>
-        public IDictionary<string, IUnixFileSystemEntry> Children { get; }
+        public string Name { get; set; }
+
+        public string ParentPath { get; set; }
+
+        public string FullName => ParentPath != "/" && Name != "/" ? $"{ParentPath}/{Name}" : $"{ParentPath}{Name}";
+
+        [JsonIgnore]
+        public IUnixPermissions Permissions { get; set; }
+        public DateTimeOffset? LastWriteTime { get; set; }
+
+        public DateTimeOffset? CreatedTime { get; set; }
+
+        public long NumberOfLinks { get; } = 1;
+
+        /// <inheritdoc/>
+        public string Owner => "owner";
+
+        /// <inheritdoc/>
+        public string Group => "group";
     }
 }

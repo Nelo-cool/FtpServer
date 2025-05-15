@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FubarDev.FtpServer.FileSystem.DotNet\FubarDev.FtpServer.FileSystem.DotNet.csproj" />
+    <ProjectReference Include="..\..\src\FubarDev.FtpServer.FileSystem.Redis\FubarDev.FtpServer.FileSystem.Redis.csproj" />
     <ProjectReference Include="..\..\src\FubarDev.FtpServer\FubarDev.FtpServer.csproj" />
   </ItemGroup>
 

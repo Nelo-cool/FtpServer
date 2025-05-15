@@ -6,11 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 using FubarDev.FtpServer.BackgroundTransfer;
 using FubarDev.FtpServer.FileSystem.Error;
+
+using StackExchange.Redis;
 
 namespace FubarDev.FtpServer.FileSystem.Redis
 {
@@ -19,18 +22,21 @@ namespace FubarDev.FtpServer.FileSystem.Redis
     /// </summary>
     public class RedisFileSystem : IUnixFileSystem
     {
+        private IUnixDirectoryEntry _root;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="RedisFileSystem"/> class.
         /// </summary>
+        /// <param name="connectionMultiplexer">Redis</param>
         /// <param name="fileSystemEntryComparer">The file system entry name comparer.</param>
-        public RedisFileSystem(StringComparer fileSystemEntryComparer)
+        public RedisFileSystem(IConnectionMultiplexer connectionMultiplexer, StringComparer fileSystemEntryComparer)
         {
-            Root = new RedisDirectoryEntry(
-                null,
-                string.Empty,
-                new Dictionary<string, IUnixFileSystemEntry>(fileSystemEntryComparer));
+            Tree = new RedisTree(connectionMultiplexer);
+            Root = new RedisDirectoryEntry { Name = "/", };
             FileSystemEntryComparer = fileSystemEntryComparer;
         }
+
+        public RedisTree Tree { get; private set; }
 
         /// <inheritdoc />
         public bool SupportsAppend { get; } = true;
@@ -45,31 +51,35 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         public IUnixDirectoryEntry Root { get; }
 
         /// <inheritdoc />
-        public Task<IReadOnlyList<IUnixFileSystemEntry>> GetEntriesAsync(
+        public async Task<IReadOnlyList<IUnixFileSystemEntry>> GetEntriesAsync(
             IUnixDirectoryEntry directoryEntry,
             CancellationToken cancellationToken)
         {
-            var entry = (RedisDirectoryEntry)directoryEntry;
-            lock (entry.ChildrenLock)
-            {
-                var children = entry.Children.Values.ToList();
-                return Task.FromResult<IReadOnlyList<IUnixFileSystemEntry>>(children);
-            }
+            return await Tree.GetEntriesAsync(directoryEntry);
+
+            //lock (entry.ChildrenLock)
+            //{
+            //    var children = entry.Children.Values.ToList();
+            //    return Task.FromResult<IReadOnlyList<IUnixFileSystemEntry>>(children);
+            //}
         }
 
         /// <inheritdoc />
-        public Task<IUnixFileSystemEntry?> GetEntryByNameAsync(IUnixDirectoryEntry directoryEntry, string name, CancellationToken cancellationToken)
+        public async Task<IUnixFileSystemEntry?> GetEntryByNameAsync(IUnixDirectoryEntry directoryEntry, string name, CancellationToken cancellationToken)
         {
-            var entry = (RedisDirectoryEntry)directoryEntry;
-            lock (entry.ChildrenLock)
-            {
-                if (entry.Children.TryGetValue(name, out var childEntry))
-                {
-                    return Task.FromResult<IUnixFileSystemEntry?>(childEntry);
-                }
-            }
+            var entry = await Tree.GetEntryByNameAsync(directoryEntry, name);
 
-            return Task.FromResult<IUnixFileSystemEntry?>(null);
+            return entry;
+
+            //lock (entry.ChildrenLock)
+            //{
+            //    if (entry.Children.TryGetValue(name, out var childEntry))
+            //    {
+            //        return Task.FromResult<IUnixFileSystemEntry?>(childEntry);
+            //    }
+            //}
+
+            //return Task.FromResult<IUnixFileSystemEntry?>(null);
         }
 
         /// <inheritdoc />
@@ -84,26 +94,26 @@ namespace FubarDev.FtpServer.FileSystem.Redis
             var sourceEntry = (RedisFileSystemEntry)source;
             var targetEntry = (RedisDirectoryEntry)target;
 
-            lock (parentEntry.ChildrenLock)
-            {
-                if (!parentEntry.Children.Remove(source.Name))
-                {
-                    targetEntry.Children.Remove(fileName);
-                    throw new FileUnavailableException(
-                        $"The source file {source.Name} couldn't be found in directory {parentEntry.Name}");
-                }
-            }
+            //lock (parentEntry.ChildrenLock)
+            //{
+            //    if (!parentEntry.Children.Remove(source.Name))
+            //    {
+            //        targetEntry.Children.Remove(fileName);
+            //        throw new FileUnavailableException(
+            //            $"The source file {source.Name} couldn't be found in directory {parentEntry.Name}");
+            //    }
+            //}
 
-            var now = DateTimeOffset.Now;
-            parentEntry.SetLastWriteTime(now);
-            targetEntry.SetLastWriteTime(now);
+            //var now = DateTimeOffset.Now;
+            //parentEntry.SetLastWriteTime(now);
+            //targetEntry.SetLastWriteTime(now);
 
-            lock (targetEntry.ChildrenLock)
-            {
-                sourceEntry.Parent = targetEntry;
-                sourceEntry.Name = fileName;
-                targetEntry.Children.Add(fileName, source);
-            }
+            //lock (targetEntry.ChildrenLock)
+            //{
+            //    sourceEntry.Parent = targetEntry;
+            //    sourceEntry.Name = fileName;
+            //    targetEntry.Children.Add(fileName, source);
+            //}
 
             return Task.FromResult(source);
         }
@@ -113,42 +123,30 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         {
             var fsEntry = (RedisFileSystemEntry)entry;
             var parent = fsEntry.Parent;
-            if (parent != null)
-            {
-                lock (parent.ChildrenLock)
-                {
-                    if (parent.Children.Remove(entry.Name))
-                    {
-                        parent.SetLastWriteTime(DateTimeOffset.Now);
-                        fsEntry.Parent = null;
-                    }
-                }
-            }
+            //if (parent != null)
+            //{
+            //    lock (parent.ChildrenLock)
+            //    {
+            //        if (parent.Children.Remove(entry.Name))
+            //        {
+            //            parent.SetLastWriteTime(DateTimeOffset.Now);
+            //            fsEntry.Parent = null;
+            //        }
+            //    }
+            //}
 
             return Task.CompletedTask;
         }
 
         /// <inheritdoc />
-        public Task<IUnixDirectoryEntry> CreateDirectoryAsync(
+        public async Task<IUnixDirectoryEntry> CreateDirectoryAsync(
             IUnixDirectoryEntry targetDirectory,
             string directoryName,
             CancellationToken cancellationToken)
         {
-            var dirEntry = (RedisDirectoryEntry)targetDirectory;
-            var childEntry = new RedisDirectoryEntry(
-                dirEntry,
-                directoryName,
-                new Dictionary<string, IUnixFileSystemEntry>(FileSystemEntryComparer));
+            var directory = await Tree.CreateDirectoryAsync(targetDirectory, directoryName);
 
-            lock (dirEntry.ChildrenLock)
-            {
-                dirEntry.Children.Add(directoryName, childEntry);
-            }
-
-            var now = DateTimeOffset.Now;
-            dirEntry.SetLastWriteTime(now)
-                .SetCreateTime(now);
-            return Task.FromResult<IUnixDirectoryEntry>(childEntry);
+            return directory;
         }
 
         /// <inheritdoc />
@@ -202,17 +200,16 @@ namespace FubarDev.FtpServer.FileSystem.Redis
 
             var targetEntry = (RedisDirectoryEntry)targetDirectory;
             var entry = new RedisFileEntry(targetEntry, fileName, temp.ToArray());
-            lock (targetEntry.ChildrenLock)
-            {
-                targetEntry.Children.Add(fileName, entry);
-            }
 
-            var now = DateTimeOffset.Now;
-            targetEntry.SetLastWriteTime(now);
+            //lock (targetEntry.ChildrenLock)
+            //{
+            //    targetEntry.Children.Add(fileName, entry);
+            //}
 
-            entry
-                .SetLastWriteTime(now)
-                .SetCreateTime(now);
+            //var now = DateTimeOffset.Now;
+            //targetEntry.SetLastWriteTime(now);
+
+            entry.LastWriteTime = entry.CreatedTime = DateTimeOffset.Now;
 
             return null;
         }
@@ -254,6 +251,27 @@ namespace FubarDev.FtpServer.FileSystem.Redis
             }
 
             return Task.FromResult(entry);
+        }
+
+        private static string GetFullPath(IUnixFileSystemEntry targetDirectory, string directoryName)
+        {
+            //    var path = new StringBuilder();
+            //    var isRoot = targetDirectory.IsRoot;
+            //    do
+            //    {
+            //        path.Insert(0, $"/{targetDirectory.Name}");
+
+            //        if (targetDirectory.IsRoot)
+            //            targetDirectory = targetDirectory.;
+            //    }
+            //    while (!targetDirectory.IsRoot);
+
+            //    if (isRoot)
+            //        path.Append($"{directoryName}");
+            //    else
+            //        path.Append($"/{directoryName}");
+
+            return $"{targetDirectory.Name}/{directoryName}".Replace("//", "/");
         }
     }
 }

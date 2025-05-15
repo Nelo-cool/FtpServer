@@ -5,6 +5,7 @@
     <Description>TCP-based FTP server implementation</Description>
     <PackageTags>portable;FTP;server</PackageTags>
     <PackageId>edokan.FubarDev.FtpServer</PackageId>
+    <LangVersion>12.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Scrutor" Version="5.0.2" />
