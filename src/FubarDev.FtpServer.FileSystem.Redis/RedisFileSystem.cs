@@ -5,13 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 using FubarDev.FtpServer.BackgroundTransfer;
-using FubarDev.FtpServer.FileSystem.Error;
 
 using StackExchange.Redis;
 
@@ -51,44 +48,21 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         public IUnixDirectoryEntry Root { get; }
 
         /// <inheritdoc />
-        public async Task<IReadOnlyList<IUnixFileSystemEntry>> GetEntriesAsync(
-            IUnixDirectoryEntry directoryEntry,
-            CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<IUnixFileSystemEntry>> GetEntriesAsync(IUnixDirectoryEntry directoryEntry, CancellationToken ct)
         {
             return await Tree.GetEntriesAsync(directoryEntry);
-
-            //lock (entry.ChildrenLock)
-            //{
-            //    var children = entry.Children.Values.ToList();
-            //    return Task.FromResult<IReadOnlyList<IUnixFileSystemEntry>>(children);
-            //}
         }
 
         /// <inheritdoc />
-        public async Task<IUnixFileSystemEntry?> GetEntryByNameAsync(IUnixDirectoryEntry directoryEntry, string name, CancellationToken cancellationToken)
+        public async Task<IUnixFileSystemEntry?> GetEntryByNameAsync(IUnixDirectoryEntry directoryEntry, string name, CancellationToken ct)
         {
             var entry = await Tree.GetEntryByNameAsync(directoryEntry, name);
 
             return entry;
-
-            //lock (entry.ChildrenLock)
-            //{
-            //    if (entry.Children.TryGetValue(name, out var childEntry))
-            //    {
-            //        return Task.FromResult<IUnixFileSystemEntry?>(childEntry);
-            //    }
-            //}
-
-            //return Task.FromResult<IUnixFileSystemEntry?>(null);
         }
 
         /// <inheritdoc />
-        public Task<IUnixFileSystemEntry> MoveAsync(
-            IUnixDirectoryEntry parent,
-            IUnixFileSystemEntry source,
-            IUnixDirectoryEntry target,
-            string fileName,
-            CancellationToken cancellationToken)
+        public Task<IUnixFileSystemEntry> MoveAsync(IUnixDirectoryEntry parent, IUnixFileSystemEntry source, IUnixDirectoryEntry target, string fileName, CancellationToken ct)
         {
             var parentEntry = (RedisDirectoryEntry)parent;
             var sourceEntry = (RedisFileSystemEntry)source;
@@ -119,30 +93,22 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         }
 
         /// <inheritdoc />
-        public Task UnlinkAsync(IUnixFileSystemEntry entry, CancellationToken cancellationToken)
+        public async Task UnlinkAsync(IUnixFileSystemEntry entry, CancellationToken ct)
         {
-            var fsEntry = (RedisFileSystemEntry)entry;
-            var parent = fsEntry.Parent;
-            //if (parent != null)
-            //{
-            //    lock (parent.ChildrenLock)
-            //    {
-            //        if (parent.Children.Remove(entry.Name))
-            //        {
-            //            parent.SetLastWriteTime(DateTimeOffset.Now);
-            //            fsEntry.Parent = null;
-            //        }
-            //    }
-            //}
+            var directory = entry as IUnixDirectoryEntry;
 
-            return Task.CompletedTask;
+            if (directory != null)
+            {
+                await Tree.UnlinkAsync(directory);
+                return;
+            }
+
+            var file = entry as IUnixFileEntry;
+            await Tree.UnlinkAsync(file);
         }
 
         /// <inheritdoc />
-        public async Task<IUnixDirectoryEntry> CreateDirectoryAsync(
-            IUnixDirectoryEntry targetDirectory,
-            string directoryName,
-            CancellationToken cancellationToken)
+        public async Task<IUnixDirectoryEntry> CreateDirectoryAsync(IUnixDirectoryEntry targetDirectory, string directoryName, CancellationToken ct)
         {
             var directory = await Tree.CreateDirectoryAsync(targetDirectory, directoryName);
 
@@ -150,7 +116,7 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         }
 
         /// <inheritdoc />
-        public Task<Stream> OpenReadAsync(IUnixFileEntry fileEntry, long startPosition, CancellationToken cancellationToken)
+        public Task<Stream> OpenReadAsync(IUnixFileEntry fileEntry, long startPosition, CancellationToken ct)
         {
             var entry = (RedisFileEntry)fileEntry;
             var stream = new MemoryStream(entry.Data)
@@ -162,7 +128,7 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         }
 
         /// <inheritdoc />
-        public async Task<IBackgroundTransfer?> AppendAsync(IUnixFileEntry fileEntry, long? startPosition, Stream data, CancellationToken cancellationToken)
+        public async Task<IBackgroundTransfer?> AppendAsync(IUnixFileEntry fileEntry, long? startPosition, Stream data, CancellationToken ct)
         {
             var entry = (RedisFileEntry)fileEntry;
 
@@ -177,7 +143,7 @@ namespace FubarDev.FtpServer.FileSystem.Redis
             }
 
             // Copy given data
-            await data.CopyToAsync(temp, 81920, cancellationToken)
+            await data.CopyToAsync(temp, 81920, ct)
                 .ConfigureAwait(false);
 
             // Update data
@@ -188,37 +154,18 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         }
 
         /// <inheritdoc />
-        public async Task<IBackgroundTransfer?> CreateAsync(
-            IUnixDirectoryEntry targetDirectory,
-            string fileName,
-            Stream data,
-            CancellationToken cancellationToken)
+        public async Task<IBackgroundTransfer?> CreateAsync(IUnixDirectoryEntry targetDirectory, string fileName, Stream data, CancellationToken ct)
         {
-            var temp = new MemoryStream();
-            await data.CopyToAsync(temp, 81920, cancellationToken)
-                .ConfigureAwait(false);
+            await Tree.CreateFileAsync(targetDirectory, fileName, data);
 
-            var targetEntry = (RedisDirectoryEntry)targetDirectory;
-            var entry = new RedisFileEntry(targetEntry, fileName, temp.ToArray());
-
-            //lock (targetEntry.ChildrenLock)
-            //{
-            //    targetEntry.Children.Add(fileName, entry);
-            //}
-
-            //var now = DateTimeOffset.Now;
-            //targetEntry.SetLastWriteTime(now);
-
-            entry.LastWriteTime = entry.CreatedTime = DateTimeOffset.Now;
-
-            return null;
+            return default;
         }
 
         /// <inheritdoc />
-        public async Task<IBackgroundTransfer?> ReplaceAsync(IUnixFileEntry fileEntry, Stream data, CancellationToken cancellationToken)
+        public async Task<IBackgroundTransfer?> ReplaceAsync(IUnixFileEntry fileEntry, Stream data, CancellationToken ct)
         {
             var temp = new MemoryStream();
-            await data.CopyToAsync(temp, 81920, cancellationToken)
+            await data.CopyToAsync(temp, 81920, ct)
                 .ConfigureAwait(false);
 
             var entry = (RedisFileEntry)fileEntry;
@@ -231,12 +178,7 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         }
 
         /// <inheritdoc />
-        public Task<IUnixFileSystemEntry> SetMacTimeAsync(
-            IUnixFileSystemEntry entry,
-            DateTimeOffset? modify,
-            DateTimeOffset? access,
-            DateTimeOffset? create,
-            CancellationToken cancellationToken)
+        public Task<IUnixFileSystemEntry> SetMacTimeAsync(IUnixFileSystemEntry entry, DateTimeOffset? modify, DateTimeOffset? access, DateTimeOffset? create, CancellationToken ct)
         {
             var fsEntry = (RedisFileSystemEntry)entry;
 
@@ -251,27 +193,6 @@ namespace FubarDev.FtpServer.FileSystem.Redis
             }
 
             return Task.FromResult(entry);
-        }
-
-        private static string GetFullPath(IUnixFileSystemEntry targetDirectory, string directoryName)
-        {
-            //    var path = new StringBuilder();
-            //    var isRoot = targetDirectory.IsRoot;
-            //    do
-            //    {
-            //        path.Insert(0, $"/{targetDirectory.Name}");
-
-            //        if (targetDirectory.IsRoot)
-            //            targetDirectory = targetDirectory.;
-            //    }
-            //    while (!targetDirectory.IsRoot);
-
-            //    if (isRoot)
-            //        path.Append($"{directoryName}");
-            //    else
-            //        path.Append($"/{directoryName}");
-
-            return $"{targetDirectory.Name}/{directoryName}".Replace("//", "/");
         }
     }
 }

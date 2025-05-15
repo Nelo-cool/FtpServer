@@ -38,5 +38,9 @@ namespace FubarDev.FtpServer.FileSystem.Redis
         /// Gets or sets the data of this file entry.
         /// </summary>
         public byte[] Data { get; set; }
+
+        public string HashKey { get; set; }
+
+        public string FieldName => $"{Name}:file";
     }
 }

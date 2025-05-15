@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -32,10 +34,21 @@ namespace FubarDev.FtpServer.FileSystem.Redis
 
             foreach (var item in hashEntries)
             {
+                var fieldName = item.Name.ToString();
+                var json = item.Value.ToString();
+
                 try
                 {
-                    var entry = JsonSerializer.Deserialize<RedisDirectoryEntry>(item.Value);
-                    entries.Add(entry);
+                    if (fieldName.EndsWith(":file"))
+                    {
+                        var entry = JsonSerializer.Deserialize<RedisFileEntry>(json);
+                        entries.Add(entry);
+                    }
+                    else
+                    {
+                        var entry = JsonSerializer.Deserialize<RedisDirectoryEntry>(json);
+                        entries.Add(entry);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -46,19 +59,29 @@ namespace FubarDev.FtpServer.FileSystem.Redis
             return entries;
         }
 
-        public async Task<IUnixFileSystemEntry> GetEntryByNameAsync(IUnixDirectoryEntry directoryEntry, string directoryName)
+        public async Task<IUnixFileSystemEntry> GetEntryByNameAsync(IUnixDirectoryEntry directoryEntry, string name)
         {
             var directory = (RedisDirectoryEntry)directoryEntry;
             var hashKey = $"{RootPoint}{directory.FullName}";
-            var fieldKey = GetDirectoryKey(directory.FullName, directoryName);
+            var fieldKey = GetDirectoryKey(directory.FullName, name);
 
             var db = _connection.GetDatabase();
+            //var keys = db.HashKeys(hashKey);
 
-            var json = await db.HashGetAsync(hashKey, fieldKey);
+            var directoryJson = await db.HashGetAsync(hashKey, fieldKey);
 
-            if (json.HasValue)
+            if (directoryJson.HasValue)
             {
-                var entry = JsonSerializer.Deserialize<RedisDirectoryEntry>(json);
+                var entry = JsonSerializer.Deserialize<RedisDirectoryEntry>(directoryJson);
+
+                return entry;
+            }
+
+            var fileJson = await db.HashGetAsync(hashKey, $"{name}:file");
+
+            if (fileJson.HasValue)
+            {
+                var entry = JsonSerializer.Deserialize<RedisFileEntry>(fileJson);
 
                 return entry;
             }
@@ -81,36 +104,58 @@ namespace FubarDev.FtpServer.FileSystem.Redis
 
             var json = JsonSerializer.Serialize(directory);
 
-            var db = _connection.GetDatabase();
             var key = $"{RootPoint}{directory.FullName}";
 
-            //Устанавливаем в Hash первым полем id: сам JSON дериктории
+            var db = _connection.GetDatabase();
+
             await db.HashSetAsync(parentHashKey, key, json);
 
             await db.KeyExpireAsync(parentHashKey, TimeSpan.FromMinutes(3));
 
-            ////На время дебага удаляем автоматически
-            //await db.KeyExpireAsync(key, TimeSpan.FromMinutes(3));
-
-            ////Установка у родителя ссылки на потомка
-            //var parentHashKey = $"{RootPoint}:{parentPath}";
-            //await db.HashSetAsync(parentHashKey, key, 0);
-
             return directory;
         }
 
-        public async Task CreateFileAsync(string directory, string fileName, byte[] content)
+        internal async Task CreateFileAsync(IUnixDirectoryEntry targetDirectory, string fileName, Stream stream)
         {
+            using var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            var content = ms.ToArray();
+
+            var directory = (RedisDirectoryEntry)targetDirectory;
+            var entry = new RedisFileEntry(directory, fileName, content);
+            entry.LastWriteTime = entry.CreatedTime = DateTimeOffset.Now;
+            var hashKey = $"{RootPoint}{directory.FullName}";
+            entry.HashKey = hashKey;
+
+            var json = JsonSerializer.Serialize(entry);
+
             var db = _connection.GetDatabase();
-            await db.HashSetAsync(GetDirectoryKey(directory, directory), fileName, content);
+
+            await db.HashSetAsync(hashKey, entry.FieldName, json);
+
+            await db.HashFieldExpireAsync(hashKey, [entry.FieldName], TimeSpan.FromMinutes(3)); //Для отладки удаляем через 3 минуты
         }
 
-        public async Task<RedisFile[]> GetFilesAsync(string directory)
+        public async Task UnlinkAsync(IUnixDirectoryEntry targetDirectory)
         {
-            var db = _connection.GetDatabase();
-            var files = await db.HashGetAllAsync(GetDirectoryKey(directory, directory));
+            var directory = (RedisDirectoryEntry)targetDirectory;
+            var hashKey = $"{RootPoint}{directory.FullName}";
 
-            return files.Select(x => new RedisFile(x.Name, x.Value)).ToArray();
+            var db = _connection.GetDatabase();
+
+            await db.KeyDeleteAsync(hashKey);
+
+            var parentHashKey = $"{RootPoint}{directory.ParentPath}";
+            await db.HashDeleteAsync(parentHashKey, hashKey);
+        }
+
+        public async Task UnlinkAsync(IUnixFileEntry targetFile)
+        {
+            var file = (RedisFileEntry)targetFile;
+
+            var db = _connection.GetDatabase();
+
+            await db.HashDeleteAsync(file.HashKey, file.FieldName);
         }
 
         public async Task WriteAsync(Action<string> logger)
@@ -140,12 +185,6 @@ namespace FubarDev.FtpServer.FileSystem.Redis
                 return $"{RootPoint}{parentPath}{directoryName}";
 
             return $"{RootPoint}{parentPath}/{directoryName}";
-        }
-
-        public class RedisFile(string name, byte[] content)
-        {
-            public string Name = name;
-            public byte[] Content = content;
         }
     }
 }
